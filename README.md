@@ -48,6 +48,13 @@ Design notes and the interview-style walkthrough: [docs/NOTES.md](docs/NOTES.md)
 
 ## Results
 
+**CI (GitHub Actions, ubuntu-latest, 4 CPUs, run 36993852719):** 3,000 checkouts, payment-service
+`kill -9`ed **8 times**, 576 concurrent duplicate submits → **0 double charges, 0 ledger discrepancies,
+approved − accounted = 0, 105/105 gift-card compensations**. The unsafe control (1,000 orders) found 210
+double-charged orders. Eligibility gRPC p99 0.41–1.72 ms at 500–2,000 rps; authorize p99 33.6 ms at 100 rps,
+152.7 ms at 200 rps (where the 4-CPU runner, shared with DynamoDB Local and the load generator, starts queueing).
+Docker compose smoke test (split-tender payment through the containers) passed.
+
 Measured locally (8-thread Windows laptop with ~1 GB free RAM; every service, DynamoDB Local and the load
 generator on the same box). Raw JSON in [results/](results/); CI re-runs these on Linux and posts them
 in the job summary.
