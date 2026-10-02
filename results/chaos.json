@@ -1,0 +1,75 @@
+{
+  "mode" : "safe",
+  "config" : {
+    "faults" : {
+      "hangMs" : 1200,
+      "timeoutBefore" : 0.03,
+      "decline" : 0.08,
+      "unavailable" : 0.03,
+      "timeoutAfter" : 0.05
+    },
+    "dupRate" : 0.2,
+    "orders" : 2000,
+    "pspDeadlineMs" : 500,
+    "concurrency" : 32
+  },
+  "timing" : {
+    "settleSec" : 0.33,
+    "clientPhaseSec" : 83.118
+  },
+  "chaos" : {
+    "paymentServiceKills" : 5
+  },
+  "client" : {
+    "httpRequests" : 8041,
+    "connectionErrorsRetried" : 3260,
+    "inFlight202Polls" : 531,
+    "concurrentDuplicatesSent" : 432,
+    "idempotentReplaysSeen" : 794,
+    "serverErrors" : 29,
+    "conflicts409" : 0,
+    "unexpected4xx" : 0,
+    "gaveUp" : 0
+  },
+  "database" : {
+    "payments" : 2000,
+    "byStatus" : {
+      "AUTHORIZED" : 261,
+      "CAPTURED" : 942,
+      "FAILED" : 246,
+      "REFUNDED" : 296,
+      "VOIDED" : 255
+    },
+    "duplicatePaymentsForSameOrder" : 0,
+    "stuckInFlight" : 0
+  },
+  "provider" : {
+    "authorizations" : 2662,
+    "tombstones" : 115,
+    "retriesDeduplicatedByIdempotencyKey" : 127
+  },
+  "money" : {
+    "pspApprovedMinor" : 93698343,
+    "pspCapturedMinor" : 50031465,
+    "pspRefundedMinor" : 16103052,
+    "pspVoidedMinor" : 14481420,
+    "pspOpenHoldsMinor" : 13082406,
+    "ourAccountedMinor" : 93698343,
+    "approvedMinusAccounted" : 0,
+    "bucketsMatch" : true
+  },
+  "splitTender" : {
+    "splitTenderPayments" : 777,
+    "giftCardChargedThenPaymentFailed" : 68,
+    "giftCardCompensated" : 68
+  },
+  "verdict" : {
+    "doubleChargedOrders" : 0,
+    "ledgerDiscrepancies" : 0,
+    "legMismatches" : 0,
+    "internallyInconsistentPayments" : 0,
+    "orphanHoldsAtProvider" : 0,
+    "compensationFailures" : 0,
+    "pass" : true
+  }
+}

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: eligibility-service
+  main:
+    web-application-type: none
+
+payflow:
+  grpc:
+    port: ${GRPC_PORT:9091}
+  # One rule per payment method; every field is optional.
+  eligibility:
+    methods:
+      CARD:
+        allowed-currencies: [USD, EUR, GBP, INR, JPY, AUD]
+        blocked-countries: [KP, IR, CU]
+      WALLET:
+        allowed-countries: [US, GB, AU, JP, IN]
+        allowed-devices: [IOS, WEB]
+        max-amount-minor: 500000
+      GIFT_CARD:
+        allowed-currencies: [USD]
+        blocked-lobs: [AIR]

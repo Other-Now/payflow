@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package payflow.v1;
+
+option java_multiple_files = true;
+option java_package = "com.payflow.proto";
+
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  CARD = 1;
+  WALLET = 2;
+  GIFT_CARD = 3;
+}
+
+enum LineOfBusiness {
+  LOB_UNSPECIFIED = 0;
+  HOTEL = 1;
+  AIR = 2;
+  CAR = 3;
+}
+
+enum Device {
+  DEVICE_UNSPECIFIED = 0;
+  WEB = 1;
+  IOS = 2;
+  ANDROID = 3;
+}
+
+// ---------------------------------------------------------------- eligibility
+
+// Which payment methods may this checkout offer? Pure function of the request.
+service Eligibility {
+  rpc GetEligibleMethods(EligibilityRequest) returns (EligibilityResponse);
+}
+
+message EligibilityRequest {
+  string country = 1;   // ISO 3166 alpha-2, e.g. "US"
+  string currency = 2;  // ISO 4217, e.g. "USD"
+  LineOfBusiness lob = 3;
+  int64 amount_minor = 4;
+  Device device = 5;
+}
+
+message MethodDecision {
+  PaymentMethod method = 1;
+  bool eligible = 2;
+  string reason = 3;    // set when eligible == false
+}
+
+message EligibilityResponse {
+  repeated MethodDecision decisions = 1;
+}
+
+// ------------------------------------------------------------- payment provider
+
+// One interface for every provider. The mock PSP routes on `method`.
+//
+// Authorize is idempotent on idempotency_key: a replay returns the original
+// result and never creates a second hold. Capture/Void/Refund address an
+// authorization by that same key and are idempotent by state.
+service PaymentProvider {
+  rpc Authorize(AuthorizeRequest) returns (ProviderResult);
+  rpc Capture(OperationRequest) returns (ProviderResult);
+  rpc Void(OperationRequest) returns (ProviderResult);
+  rpc Refund(OperationRequest) returns (ProviderResult);
+  rpc GetStatus(OperationRequest) returns (ProviderResult);
+}
+
+enum AuthStatus {
+  AUTH_STATUS_UNSPECIFIED = 0;
+  NOT_FOUND = 1;
+  AUTHORIZED = 2;
+  DECLINED = 3;
+  CAPTURED = 4;
+  VOIDED = 5;
+  REFUNDED = 6;
+}
+
+message AuthorizeRequest {
+  string idempotency_key = 1;
+  PaymentMethod method = 2;
+  int64 amount_minor = 3;
+  string currency = 4;
+  string token = 5;       // card / wallet / gift-card token
+  string order_ref = 6;   // merchant order reference; lets the PSP-side ledger
+                          // see every hold placed for one customer order
+}
+
+message OperationRequest {
+  string idempotency_key = 1;  // the Authorize key of the authorization to act on
+  PaymentMethod method = 2;
+}
+
+message ProviderResult {
+  AuthStatus status = 1;
+  string provider_ref = 2;
+  string decline_reason = 3;
+}
+
+// ------------------------------------------------------- mock PSP test controls
+
+service PspAdmin {
+  rpc SetFaults(FaultConfig) returns (Empty);
+  rpc DumpLedger(Empty) returns (Ledger);
+}
+
+message Empty {}
+
+// Probabilities are per call to Authorize/Capture/Void/Refund. GetStatus is
+// never faulted: it is the reconciler's source of truth.
+message FaultConfig {
+  double decline_rate = 1;         // Authorize only
+  double unavailable_rate = 2;     // fail with UNAVAILABLE, no side effect
+  double timeout_before_rate = 3;  // hang, no side effect (request "lost")
+  double timeout_after_rate = 4;   // apply the side effect, then hang
+  int64 hang_ms = 5;
+  int64 latency_ms = 6;            // added to every call
+  PaymentMethod only_method = 7;   // UNSPECIFIED = all methods
+}
+
+message LedgerEntry {
+  string idempotency_key = 1;
+  PaymentMethod method = 2;
+  string order_ref = 3;
+  int64 amount_minor = 4;
+  AuthStatus status = 5;
+  int32 authorize_calls = 6;       // >1 means retries were deduplicated
+  bool tombstone = 7;              // created by a Void on an unknown key
+}
+
+message Ledger {
+  repeated LedgerEntry entries = 1;
+}

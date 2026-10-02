@@ -1,0 +1,75 @@
+{
+  "machine" : {
+    "os" : "Windows 11",
+    "cpus" : 8,
+    "note" : "all services + DynamoDB Local + load generator on one box"
+  },
+  "eligibility_grpc" : [ {
+    "targetRps" : 500,
+    "achievedRps" : 500,
+    "requests" : 10000,
+    "ok" : 10000,
+    "failed" : 0,
+    "p50ms" : 9.31,
+    "p90ms" : 15.8,
+    "p99ms" : 21.02,
+    "p999ms" : 27.54,
+    "maxMs" : 35.68
+  }, {
+    "targetRps" : 1000,
+    "achievedRps" : 999,
+    "requests" : 20000,
+    "ok" : 20000,
+    "failed" : 0,
+    "p50ms" : 9.97,
+    "p90ms" : 16.24,
+    "p99ms" : 22.48,
+    "p999ms" : 29.08,
+    "maxMs" : 34.11
+  }, {
+    "targetRps" : 2000,
+    "achievedRps" : 1999,
+    "requests" : 40000,
+    "ok" : 40000,
+    "failed" : 0,
+    "p50ms" : 11.08,
+    "p90ms" : 17.45,
+    "p99ms" : 23.81,
+    "p999ms" : 29.1,
+    "maxMs" : 36.21
+  } ],
+  "authorize_http" : [ {
+    "targetRps" : 50,
+    "achievedRps" : 50,
+    "requests" : 1000,
+    "ok" : 1000,
+    "failed" : 0,
+    "p50ms" : 79.82,
+    "p90ms" : 93.06,
+    "p99ms" : 113.05,
+    "p999ms" : 122.16,
+    "maxMs" : 125.11
+  }, {
+    "targetRps" : 100,
+    "achievedRps" : 100,
+    "requests" : 2000,
+    "ok" : 2000,
+    "failed" : 0,
+    "p50ms" : 78.38,
+    "p90ms" : 95.29,
+    "p99ms" : 112.98,
+    "p999ms" : 125.89,
+    "maxMs" : 132.84
+  }, {
+    "targetRps" : 200,
+    "achievedRps" : 200,
+    "requests" : 4000,
+    "ok" : 4000,
+    "failed" : 0,
+    "p50ms" : 80.87,
+    "p90ms" : 113.64,
+    "p99ms" : 141.03,
+    "p999ms" : 157.16,
+    "maxMs" : 163.58
+  } ]
+}

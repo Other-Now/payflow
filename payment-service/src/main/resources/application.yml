@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: payment-service
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${HTTP_PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+payflow:
+  eligibility-target: ${ELIGIBILITY_TARGET:localhost:9091}
+  psp-target: ${PSP_TARGET:localhost:9095}
+  unsafe-mode: ${UNSAFE_MODE:false}
+  dynamo:
+    endpoint: ${DYNAMO_ENDPOINT:http://localhost:8000}   # empty = real AWS, default credential chain
+    region: ${AWS_REGION:us-east-1}
+    table: ${DYNAMO_TABLE:payflow}
+    create-table: ${DYNAMO_CREATE_TABLE:true}            # local/CI only; in AWS the table is IaC-owned
+  psp:
+    deadline-ms: ${PSP_DEADLINE_MS:800}
+    max-attempts: 3
+    backoff-ms: 50
+    breaker-window: 20
+    breaker-failure-percent: 50
+    breaker-open-ms: 2000
+  recon:
+    interval-ms: ${RECON_INTERVAL_MS:2000}
+    stale-after-ms: ${RECON_STALE_AFTER_MS:15000}
+
+logging:
+  level:
+    com.amazonaws.services.dynamodbv2.local: WARN   # only matters when DynamoDB Local runs in-process (tests)

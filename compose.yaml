@@ -1,0 +1,20 @@
+# docker compose up --build   ->   http://localhost:8080/v1/payments
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:2.6.1
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+
+  mock-psp:
+    build: { context: ., args: { JAR: mock-psp/target/payflow-mock-psp-0.1.0-exec.jar } }
+
+  eligibility:
+    build: { context: ., args: { JAR: eligibility-service/target/eligibility-service.jar } }
+
+  payment-service:
+    build: { context: ., args: { JAR: payment-service/target/payment-service.jar } }
+    depends_on: [dynamodb, mock-psp, eligibility]
+    environment:
+      DYNAMO_ENDPOINT: http://dynamodb:8000
+      PSP_TARGET: mock-psp:9095
+      ELIGIBILITY_TARGET: eligibility:9091
+    ports: ["8080:8080"]

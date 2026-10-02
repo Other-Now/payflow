@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - name: unit + integration tests (DynamoDB Local in-process, real gRPC)
+        run: mvn -B verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: surefire-reports, path: "**/target/surefire-reports/" }
+
+  chaos-and-bench:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HARNESS: java -Xmx768m -Dsqlite4java.library.path=loadtest/target/native-libs -jar loadtest/target/loadtest.jar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: mvn -B -q package -DskipTests
+      - name: chaos (safe) — must pass
+        run: $HARNESS chaos --orders=3000 --concurrency=48 --kills=10 --kill-every-ms=8000 --out=results
+      - name: chaos (unsafe negative control) — expected to find double charges
+        run: $HARNESS chaos --unsafe --orders=1000 --concurrency=48 --kills=4 --kill-every-ms=8000 --out=results
+      - name: latency bench
+        run: $HARNESS bench --out=results
+      - name: job summary
+        if: always()
+        run: python3 scripts/summary.py results >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: results, path: results/ }
+
+  compose-smoke:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build
+      - name: wait for payment-service
+        run: |
+          for i in $(seq 1 90); do curl -fs localhost:8080/actuator/health && break; sleep 2; done
+      - name: split-tender payment through the containers
+        run: |
+          code=$(curl -s -o out.json -w '%{http_code}' localhost:8080/v1/payments \
+            -H 'Content-Type: application/json' -H "Idempotency-Key: smoke-$GITHUB_RUN_ID" \
+            -d '{"orderRef":"smoke","country":"US","currency":"USD","lob":"HOTEL","device":"WEB","amountMinor":25000,
+                 "tenders":[{"method":"GIFT_CARD","amountMinor":5000,"token":"tok_gc"},
+                            {"method":"CARD","amountMinor":20000,"token":"tok_visa"}]}')
+          cat out.json; echo
+          test "$code" = 201
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down
